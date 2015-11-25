@@ -23,9 +23,7 @@ class SimplePageRank(object):
     def compute_pagerank(self, num_iters):
         nodes = self.initialize_nodes(self.input_rdd)  # nodes: (0, (1.0, frozenset([1, 2])))....
         num_nodes = nodes.count()
-        print "num nodes = %d", num_nodes  # the number of 
         for i in range(0, num_iters):
-            print "here 2"  # can print
             nodes = self.update_weights(nodes, num_nodes)  # nodes is list
         return self.format_output(nodes)
     """
@@ -78,7 +76,6 @@ class SimplePageRank(object):
                 .flatMap(emit_edges)\
                 .reduceByKey(reduce_edges)\
                 .map(initialize_weights)
-        print "========================"
         # for node in nodes.take(100):  # Return array with the first n elements of dataset.
         #     print "{}".format(node) 
         # (0, (1.0, frozenset([1, 2])))
@@ -113,7 +110,6 @@ class SimplePageRank(object):
             # for node in nodes.take(100):
             # print "{}".format(node)        
             # YOUR CODE HERE
-            print "*******************************"
             node_targets = (node, targets)  # pass node-targets to return value
             node_weight_self = (node, 0.05)  # stay in same page, 0.05 goes back to self node
             node_weight_random = (node, 0.1)  # random factor for each node
@@ -145,7 +141,6 @@ class SimplePageRank(object):
         """
         def collect_weights((node, values)):
             # YOUR CODE HERE
-            print "================================"
             # input: node, [list of values of this node]
             weight = 0
             for val in values:
