@@ -11,37 +11,33 @@ class SimplePageRank(object):
     However, the signature MUST stay the same.
     """
     def __init__(self, input_rdd):
-        self.input_rdd = input_rdd  # python constructor: do not need to put attrs 
-                                    # somewhere elese
+        self.input_rdd = input_rdd
 
     """
     Computes the pagerank algorithm for num_iters number of iterations.
     You do not need to change this method, but feel free to do so to suit your needs. 
     However, the signature MUST stay the same.
-    The output should be a rdd of (pagerank score, nodeID) pairs, 
+    The output should be a rdd of (pagerank score, node label) pairs, 
     sorted by pagerank score in descending order.
     """
-    def compute_pagerank(self, num_iters):  # num_iters is the number of iterations
-
-
-        nodes = self.initialize_nodes(self.input_rdd)  # pass in the attr of self as paramter
+    def compute_pagerank(self, num_iters):
+        nodes = self.initialize_nodes(self.input_rdd)  # nodes: (0, (1.0, frozenset([1, 2])))....
         num_nodes = nodes.count()
-        print num_nodes
+        print "num nodes = %d", num_nodes  # the number of 
         for i in range(0, num_iters):
-            nodes = self.update_weights(nodes, num_nodes)
-        return self.format_output(nodes)  # return: a rdd of (nodeID, weight)pairs
-                                          # sorted by pagerank in descending order
-
+            print "here 2"  # can print
+            nodes = self.update_weights(nodes, num_nodes)  # nodes is list
+        return self.format_output(nodes)
     """
     Converts the input_rdd to a rdd suitable for iteration with
     the pagerank update algorithm.
     The rdd nodes should be enough to calculate the next iteration
     of the pagerank update algorithm by itself, without using any
     external structures.
-    That means that all the edges must be stored somewhere, ??
-    as well as the current weights of each node.  ??
+    That means that all the edges must be stored somewhere,
+    as well as the current weights of each node.
     You do not need to change this method, but feel free to do so to suit your needs.
-    In the default implemention, the rdd is simply a collection of (nodeID, (current weight, target)) tuples.
+    In the default implemention, the rdd is simply a collection of (node label, (current weight, target)) tuples.
     Lines in the input_rdd file will either be blank or begin with "#", which
     should be ignored, or be of the form "source[whitespace]target" where source and target
     are labels for nodes that are integers. 
@@ -50,11 +46,11 @@ class SimplePageRank(object):
     tells us that there is an edge going from node 1 to node 3.
     """
     @staticmethod
-    def initialize_nodes(input_rdd):  # used to convert input RDD into anoher
-        # takes in a line and emits edges in the graph corresponding to that line
-        for node in input_rdd.take(100):  # Return array with the first n elements of dataset.
-            print "{}".format(node)
-
+    def initialize_nodes(input_rdd):
+         # takes in a line and emits edges in the graph corresponding to that line
+        # for node in input_rdd.take(100):  # Return array with the first n elements of dataset.
+        #     print "{}".format(node)
+        # 0 1; 0 2; ...
         def emit_edges(line):
             # ignore blank lines and comments
             if len(line) == 0 or line[0] == "#":
@@ -82,12 +78,11 @@ class SimplePageRank(object):
                 .flatMap(emit_edges)\
                 .reduceByKey(reduce_edges)\
                 .map(initialize_weights)
-        # print "========================"
+        print "========================"
         # for node in nodes.take(100):  # Return array with the first n elements of dataset.
-        #     print "{}".format(node)        
-        return nodes  # nodes should contain enough info to perform the next iteration
-                      # without any external info
-                      # return: (0, (1.0, frozenset([1, 2])))
+        #     print "{}".format(node) 
+        # (0, (1.0, frozenset([1, 2])))
+        return nodes
 
     """
     Performs one iteration of the pagerank update algorithm on the set of node data.
@@ -95,9 +90,12 @@ class SimplePageRank(object):
     You are allowed to change the signature if you desire to.
     """
     @staticmethod
-    def update_weights(nodes, num_nodes):
+    def update_weights(nodes, num_nodes):  # nodes: list of node, (0, (1.0, frozenset([1, 2])))...
+        # for node in nodes.take(100):
+        #     print "{}".format(node)
+
         """
-        Mapper phase.
+        Mapper phase.  -- distribute_weights
         Distributes pagerank scores for a given node to each of its targets,
         as specified by the update algorithm.
         Some important things to consider:
@@ -110,22 +108,31 @@ class SimplePageRank(object):
         You are allowed to change the signature if you desire to.
         """
         def distribute_weights((node, (weight, targets))):
-            # (1, (1.0, frozenset([])))
+            # pass in: elem of nodes = (0, (1.0, frozenset([1, 2])))...
+
+            # for node in nodes.take(100):
+            # print "{}".format(node)        
             # YOUR CODE HERE
-            print "here 2"
-            print str(node)
-            print str(weight)
-            print str(targets)
-            return []
-            # if len(targets) == 0:
-            #     print "empty targets"
-            #     avg_weight = truediv(int(weight), num_nodes)
-            #     return (node, (avg_weight, nodes.distinct()))
-            # i = 0
-            # for node in targets:
-            #     print "here" + i
-            #     i += 1
-            #     return 
+            print "*******************************"
+            node_targets = (node, targets)  # pass node-targets to return value
+            node_weight_self = (node, 0.05)  # stay in same page, 0.05 goes back to self node
+            node_weight_random = (node, 0.1)  # random factor for each node
+            node_weight_list = [node_targets, node_weight_self, node_weight_random]
+            
+            if len(targets) == 0:  # no external links in this page
+                average_weight = 0.85 / (num_nodes - 1)
+                new_target = range(num_nodes).remove(node)  # give 0.85 to all other nodes
+                for target in new_target:
+                    node_weight_pair = (target, average_weight)
+                    node_weight_list.append(node_weight_pair)
+            else:  # when links exist
+                average_weight = 0.85 / len(targets)
+                for target in targets:
+                    node_weight_pair = (target, average_weight)
+                    node_weight_list.append(node_weight_pair)
+                # new_weight = new_weight + [average_weight] * (len(targets) - 1)
+            return node_weight_list
+
         """
         Reducer phase.
         We are given a node as a key and a list of all the values emitted by the mappers
@@ -138,13 +145,17 @@ class SimplePageRank(object):
         """
         def collect_weights((node, values)):
             # YOUR CODE HERE
-            # add 0.1 --  the random factor here
-            return []
-        print "here 1"
-        return nodes\
-                .flatMap(distribute_weights)\
-                .groupByKey()\
-                .map(collect_weights)
+            print "================================"
+            # input: node, [list of values of this node]
+            weight = 0
+            for val in values:
+                if isinstance(val, frozenset):
+                    targets = val
+                    continue
+                weight += val
+            return (node, (weight, targets))
+        # retVal of update_xxx
+        return nodes.flatMap(distribute_weights).groupByKey().map(collect_weights)
 
     """
     Formats the output of the data to the format required by the specs.
