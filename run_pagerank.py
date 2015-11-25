@@ -27,12 +27,12 @@ if __name__ == "__main__":
             print >> sys.stderr, "Unable to load file"
             sys.exit(0)
         try:
-            output = method(input_rdd).compute_pagerank(num_iters)
+            output = method(input_rdd).compute_pagerank(num_iters)  # method(input_rdd) = init instance
         except:
             print >> sys.stderr, "Something went wrong"
             traceback.print_exc()
             sys.exit(0)
-        for (node, weight) in output.take(100):
+        for (node, weight) in output.take(100):  # Return array with the first n elements of dataset.
             print "{} {}".format(node, weight)
     else:
         print >> sys.stderr, "Not enough arguments specified. Must specify the method and input file."
