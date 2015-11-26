@@ -24,6 +24,8 @@ class SimplePageRank(object):
         nodes = self.initialize_nodes(self.input_rdd)  # nodes: (0, (1.0, frozenset([1, 2])))....
         num_nodes = nodes.count()
         for i in range(0, num_iters):
+            print "**********************************************"
+            print num_iters
             nodes = self.update_weights(nodes, num_nodes)  # nodes is list
         return self.format_output(nodes)
     """
@@ -45,7 +47,7 @@ class SimplePageRank(object):
     """
     @staticmethod
     def initialize_nodes(input_rdd):
-         # takes in a line and emits edges in the graph corresponding to that line
+        # takes in a line and emits edges in the graph corresponding to that line
         # for node in input_rdd.take(100):  # Return array with the first n elements of dataset.
         #     print "{}".format(node)
         # 0 1; 0 2; ...
@@ -54,7 +56,8 @@ class SimplePageRank(object):
             if len(line) == 0 or line[0] == "#":
                 return []
             # get the source and target labels
-            source, target = tuple(map(int, line.split()))
+            source, target = tuple(map(int, line.split()))  # frozenset([(0, 1, 2, 3)])
+            # map the line from str to int, then change it to tuple form: edge = source, target
             # emit the edge
             edge = (source, frozenset([target]))
             # also emit "empty" edges to catch nodes that do not have any
@@ -62,13 +65,16 @@ class SimplePageRank(object):
             self_source = (source, frozenset())
             self_target = (target, frozenset())
             return [edge, self_source, self_target]
-
+            # flatmap emit three key-value pair, key: node, value: frozenset(..)
+            # jk: emit value form: fronzenzet(list[tuple()])
         # collects all outgoing target nodes for a given source node
+        # for two frozen set with same key: add frozen set together
         def reduce_edges(e1, e2):
-            return e1 | e2 
+            return e1 | e2 # frozenset use "|" as "+" operator
 
         # sets the weight of every node to 0, and formats the output to the 
         # specified format of (source (weight, targets))
+        # map again for the required format of output
         def initialize_weights((source, targets)):
             return (source, (1.0, targets))
 
@@ -110,14 +116,22 @@ class SimplePageRank(object):
             # for node in nodes.take(100):
             # print "{}".format(node)        
             # YOUR CODE HERE
-            node_targets = (node, targets)  # pass node-targets to return value
-            node_weight_self = (node, 0.05)  # stay in same page, 0.05 goes back to self node
-            node_weight_random = (node, 0.1)  # random factor for each node
+            # if isinstance(targets, frozenset):
+            #     print "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
+            # the targets passed in are all frozenset
+
+            node_targets = (node, targets)  # pass node-targets to return value, node-frozenset
+            node_weight_self = (node, frozenset([0.05,]))  # stay in same page, 0.05 goes back to self node
+            node_weight_random = (node, frozenset([0.1,]))  # random factor for each node
             node_weight_list = [node_targets, node_weight_self, node_weight_random]
             
-            if len(targets) == 0:  # no external links in this page
-                average_weight = 0.85 / (num_nodes - 1)
-                new_target = range(num_nodes).remove(node)  # give 0.85 to all other nodes
+            targets_unpack = next(iter(targets))
+            print "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+            print targets_unpack
+            if len(targets_unpack) == 0:  # no external links in this page
+                average_weight = frozenset([tuple(0.85 / (num_nodes - 1))])
+                new_target = range(num_nodes)  # give 0.85 to all other nodes
+                new_target.remove(node)
                 for target in new_target:
                     node_weight_pair = (target, average_weight)
                     node_weight_list.append(node_weight_pair)
@@ -145,10 +159,12 @@ class SimplePageRank(object):
             weight = 0
             for val in values:
                 if isinstance(val, frozenset):
+                    print "ffffffffffffffffffffffffffffffff"
                     targets = val
                     continue
                 weight += val
-            return (node, (weight, targets))
+            return (node, (weight, frozenset([tuple(targets)])))
+
         # retVal of update_xxx
         return nodes.flatMap(distribute_weights).groupByKey().map(collect_weights)
 
